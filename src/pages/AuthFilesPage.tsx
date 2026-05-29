@@ -45,6 +45,7 @@ import { AuthFilesPrefixProxyEditorModal } from '@/features/authFiles/components
 import { OAuthExcludedCard } from '@/features/authFiles/components/OAuthExcludedCard';
 import { OAuthModelAliasCard } from '@/features/authFiles/components/OAuthModelAliasCard';
 import { useAuthFilesData } from '@/features/authFiles/hooks/useAuthFilesData';
+import { useBatchQuotaCheck } from '@/features/authFiles/hooks/useBatchQuotaCheck';
 import { useAuthFilesModels } from '@/features/authFiles/hooks/useAuthFilesModels';
 import { useAuthFilesOauth } from '@/features/authFiles/hooks/useAuthFilesOauth';
 import { useAuthFilesPrefixProxyEditor } from '@/features/authFiles/hooks/useAuthFilesPrefixProxyEditor';
@@ -67,8 +68,7 @@ const BATCH_BAR_HIDDEN_TRANSFORM = 'translateX(-50%) translateY(56px)';
 const DEFAULT_REGULAR_PAGE_SIZE = 9;
 const DEFAULT_COMPACT_PAGE_SIZE = 12;
 
-const escapeWildcardSearchSegment = (value: string) =>
-  value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const escapeWildcardSearchSegment = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const buildWildcardSearch = (value: string): RegExp | null => {
   if (!value.includes('*')) return null;
@@ -132,6 +132,11 @@ export function AuthFilesPage() {
     batchSetStatus,
     batchDelete,
   } = useAuthFilesData();
+  const {
+    status: batchCheckStatus,
+    progress: batchCheckProgress,
+    checkAndDisableProblematic,
+  } = useBatchQuotaCheck();
 
   const statusBarCache = useAuthFilesStatusBarCache(files);
 
@@ -202,10 +207,7 @@ export function AuthFilesPage() {
       if (typeof persisted.disabledOnly === 'boolean') {
         setDisabledOnly(persisted.disabledOnly);
       }
-      if (
-        typeof persistedCompactMode !== 'boolean' &&
-        typeof persisted.compactMode === 'boolean'
-      ) {
+      if (typeof persistedCompactMode !== 'boolean' && typeof persisted.compactMode === 'boolean') {
         setCompactMode(persisted.compactMode);
       }
       if (typeof persisted.search === 'string') {
@@ -221,11 +223,11 @@ export function AuthFilesPage() {
       const regularPageSize =
         typeof persisted.regularPageSize === 'number' && Number.isFinite(persisted.regularPageSize)
           ? clampCardPageSize(persisted.regularPageSize)
-          : legacyPageSize ?? DEFAULT_REGULAR_PAGE_SIZE;
+          : (legacyPageSize ?? DEFAULT_REGULAR_PAGE_SIZE);
       const compactPageSize =
         typeof persisted.compactPageSize === 'number' && Number.isFinite(persisted.compactPageSize)
           ? clampCardPageSize(persisted.compactPageSize)
-          : legacyPageSize ?? DEFAULT_COMPACT_PAGE_SIZE;
+          : (legacyPageSize ?? DEFAULT_COMPACT_PAGE_SIZE);
       setPageSizeByMode({
         regular: regularPageSize,
         compact: compactPageSize,
@@ -671,6 +673,27 @@ export function AuthFilesPage() {
           <div className={styles.headerActions}>
             <Button variant="secondary" size="sm" onClick={handleHeaderRefresh} disabled={loading}>
               {t('common.refresh')}
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => void checkAndDisableProblematic(files, loadFiles)}
+              disabled={
+                disableControls ||
+                loading ||
+                batchCheckStatus === 'checking' ||
+                batchCheckStatus === 'disabling'
+              }
+              loading={batchCheckStatus === 'checking' || batchCheckStatus === 'disabling'}
+            >
+              {batchCheckStatus === 'checking'
+                ? t('auth_files.batch_checking', {
+                    current: batchCheckProgress.checked,
+                    total: batchCheckProgress.total,
+                  })
+                : batchCheckStatus === 'disabling'
+                  ? t('auth_files.batch_disabling')
+                  : t('auth_files.batch_check_and_disable')}
             </Button>
             <Button
               size="sm"

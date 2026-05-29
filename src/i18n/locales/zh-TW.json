@@ -370,7 +370,18 @@
     "prefix_proxy_html_challenge": "下載到的是 HTML 驗證頁面，不是驗證 JSON 物件。請重新驗證或替換該驗證檔案後再編輯欄位。",
     "prefix_proxy_saved_success": "已更新驗證檔案「{{name}}」",
     "quota_refresh_success": "已重新整理「{{name}}」的配額",
-    "quota_refresh_failed": "重新整理「{{name}}」的配額失敗：{{message}}"
+    "quota_refresh_failed": "重新整理「{{name}}」的配額失敗：{{message}}",
+    "batch_check_and_disable": "檢查並停用問題憑證",
+    "batch_checking": "檢查中 {{current}}/{{total}}...",
+    "batch_disabling": "停用中...",
+    "batch_check_no_files": "沒有需要檢查的檔案",
+    "batch_check_all_good": "所有憑證都正常工作",
+    "batch_check_failed": "檢查憑證失敗: {{message}}",
+    "batch_disable_title": "停用問題憑證",
+    "batch_disable_confirm": "發現 {{count}} 個問題憑證，是否停用？",
+    "batch_disable_button": "停用",
+    "batch_disable_success": "成功停用 {{count}} 個憑證",
+    "batch_disable_partial": "停用 {{success}} 個憑證，{{failed}} 個失敗"
   },
   "antigravity_quota": {
     "title": "Antigravity 配額",

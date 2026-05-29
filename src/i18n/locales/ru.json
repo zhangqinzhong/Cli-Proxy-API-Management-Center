@@ -366,7 +366,18 @@
     "quota_refresh_single": "Обновить квоту",
     "quota_refresh_hint": "Обновить квоту только для этих учётных данных",
     "quota_refresh_success": "Квота для \"{{name}}\" обновлена",
-    "quota_refresh_failed": "Не удалось обновить квоту для \"{{name}}\": {{message}}"
+    "quota_refresh_failed": "Не удалось обновить квоту для \"{{name}}\": {{message}}",
+    "batch_check_and_disable": "Проверить и отключить проблемные",
+    "batch_checking": "Проверка {{current}}/{{total}}...",
+    "batch_disabling": "Отключение...",
+    "batch_check_no_files": "Нет файлов для проверки",
+    "batch_check_all_good": "Все учетные данные работают правильно",
+    "batch_check_failed": "Ошибка проверки учетных данных: {{message}}",
+    "batch_disable_title": "Отключить проблемные учетные данные",
+    "batch_disable_confirm": "Найдено {{count}} проблемных учетных данных. Отключить их?",
+    "batch_disable_button": "Отключить",
+    "batch_disable_success": "Успешно отключено {{count}} учетных данных",
+    "batch_disable_partial": "Отключено {{success}} учетных данных, {{failed}} не удалось"
   },
   "antigravity_quota": {
     "title": "Квота Antigravity",

@@ -370,7 +370,18 @@
     "prefix_proxy_html_challenge": "下载到的是 HTML 验证页面，不是认证 JSON 对象。请重新认证或替换该认证文件后再编辑字段。",
     "prefix_proxy_saved_success": "已更新认证文件 \"{{name}}\"",
     "quota_refresh_success": "已刷新 \"{{name}}\" 的额度",
-    "quota_refresh_failed": "刷新 \"{{name}}\" 的额度失败：{{message}}"
+    "quota_refresh_failed": "刷新 \"{{name}}\" 的额度失败：{{message}}",
+    "batch_check_and_disable": "检查并停用问题凭证",
+    "batch_checking": "检查中 {{current}}/{{total}}...",
+    "batch_disabling": "停用中...",
+    "batch_check_no_files": "没有需要检查的文件",
+    "batch_check_all_good": "所有凭证都正常工作",
+    "batch_check_failed": "检查凭证失败: {{message}}",
+    "batch_disable_title": "停用问题凭证",
+    "batch_disable_confirm": "发现 {{count}} 个问题凭证，是否停用？",
+    "batch_disable_button": "停用",
+    "batch_disable_success": "成功停用 {{count}} 个凭证",
+    "batch_disable_partial": "停用 {{success}} 个凭证，{{failed}} 个失败"
   },
   "antigravity_quota": {
     "title": "Antigravity 额度",

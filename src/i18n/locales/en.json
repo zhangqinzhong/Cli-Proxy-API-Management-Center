@@ -370,7 +370,18 @@
     "prefix_proxy_html_challenge": "Downloaded content is an HTML challenge page, not an auth JSON object. Re-authenticate or replace this auth file before editing fields.",
     "prefix_proxy_saved_success": "Updated auth file \"{{name}}\" successfully",
     "quota_refresh_success": "Quota refreshed for \"{{name}}\"",
-    "quota_refresh_failed": "Failed to refresh quota for \"{{name}}\": {{message}}"
+    "quota_refresh_failed": "Failed to refresh quota for \"{{name}}\": {{message}}",
+    "batch_check_and_disable": "Check & Disable Problematic",
+    "batch_checking": "Checking {{current}}/{{total}}...",
+    "batch_disabling": "Disabling...",
+    "batch_check_no_files": "No files to check",
+    "batch_check_all_good": "All credentials are working properly",
+    "batch_check_failed": "Failed to check credentials: {{message}}",
+    "batch_disable_title": "Disable Problematic Credentials",
+    "batch_disable_confirm": "Found {{count}} problematic credentials. Do you want to disable them?",
+    "batch_disable_button": "Disable",
+    "batch_disable_success": "Successfully disabled {{count}} credentials",
+    "batch_disable_partial": "Disabled {{success}} credentials, {{failed}} failed"
   },
   "antigravity_quota": {
     "title": "Antigravity Quota",
