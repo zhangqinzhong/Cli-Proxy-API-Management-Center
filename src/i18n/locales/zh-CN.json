@@ -381,7 +381,16 @@
     "batch_disable_confirm": "发现 {{count}} 个问题凭证，是否停用？",
     "batch_disable_button": "停用",
     "batch_disable_success": "成功停用 {{count}} 个凭证",
-    "batch_disable_partial": "停用 {{success}} 个凭证，{{failed}} 个失败"
+    "batch_disable_partial": "停用 {{success}} 个凭证，{{failed}} 个失败",
+    "batch_check_and_enable": "检查并启用恢复凭证",
+    "batch_enabling": "启用中...",
+    "batch_check_no_disabled": "没有已停用的凭证",
+    "batch_check_none_recovered": "没有发现恢复正常的凭证",
+    "batch_enable_title": "启用恢复凭证",
+    "batch_enable_confirm": "发现 {{count}} 个凭证已有额度，是否启用？",
+    "batch_enable_button": "启用",
+    "batch_enable_success": "成功启用 {{count}} 个凭证",
+    "batch_enable_partial": "启用 {{success}} 个凭证，{{failed}} 个失败"
   },
   "antigravity_quota": {
     "title": "Antigravity 额度",

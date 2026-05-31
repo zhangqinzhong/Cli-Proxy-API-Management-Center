@@ -377,7 +377,16 @@
     "batch_disable_confirm": "Найдено {{count}} проблемных учетных данных. Отключить их?",
     "batch_disable_button": "Отключить",
     "batch_disable_success": "Успешно отключено {{count}} учетных данных",
-    "batch_disable_partial": "Отключено {{success}} учетных данных, {{failed}} не удалось"
+    "batch_disable_partial": "Отключено {{success}} учетных данных, {{failed}} не удалось",
+    "batch_check_and_enable": "Проверить и включить восстановленные",
+    "batch_enabling": "Включение...",
+    "batch_check_no_disabled": "Нет отключенных учетных данных",
+    "batch_check_none_recovered": "Восстановленные учетные данные не найдены",
+    "batch_enable_title": "Включить восстановленные учетные данные",
+    "batch_enable_confirm": "Найдено {{count}} учетных данных с доступной квотой. Включить?",
+    "batch_enable_button": "Включить",
+    "batch_enable_success": "Успешно включено {{count}} учетных данных",
+    "batch_enable_partial": "Включено {{success}} учетных данных, {{failed}} не удалось"
   },
   "antigravity_quota": {
     "title": "Квота Antigravity",

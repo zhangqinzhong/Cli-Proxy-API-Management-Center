@@ -136,6 +136,7 @@ export function AuthFilesPage() {
     status: batchCheckStatus,
     progress: batchCheckProgress,
     checkAndDisableProblematic,
+    checkAndEnableRecovered,
   } = useBatchQuotaCheck();
 
   const statusBarCache = useAuthFilesStatusBarCache(files);
@@ -694,6 +695,22 @@ export function AuthFilesPage() {
                 : batchCheckStatus === 'disabling'
                   ? t('auth_files.batch_disabling')
                   : t('auth_files.batch_check_and_disable')}
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => void checkAndEnableRecovered(files, loadFiles)}
+              disabled={
+                disableControls ||
+                loading ||
+                batchCheckStatus === 'checking' ||
+                batchCheckStatus === 'enabling'
+              }
+              loading={batchCheckStatus === 'enabling'}
+            >
+              {batchCheckStatus === 'enabling'
+                ? t('auth_files.batch_enabling')
+                : t('auth_files.batch_check_and_enable')}
             </Button>
             <Button
               size="sm"

@@ -381,7 +381,16 @@
     "batch_disable_confirm": "Found {{count}} problematic credentials. Do you want to disable them?",
     "batch_disable_button": "Disable",
     "batch_disable_success": "Successfully disabled {{count}} credentials",
-    "batch_disable_partial": "Disabled {{success}} credentials, {{failed}} failed"
+    "batch_disable_partial": "Disabled {{success}} credentials, {{failed}} failed",
+    "batch_check_and_enable": "Check & Enable Recovered",
+    "batch_enabling": "Enabling...",
+    "batch_check_no_disabled": "No disabled credentials to check",
+    "batch_check_none_recovered": "No recovered credentials found",
+    "batch_enable_title": "Enable Recovered Credentials",
+    "batch_enable_confirm": "Found {{count}} credentials with available quota. Enable them?",
+    "batch_enable_button": "Enable",
+    "batch_enable_success": "Successfully enabled {{count}} credentials",
+    "batch_enable_partial": "Enabled {{success}} credentials, {{failed}} failed"
   },
   "antigravity_quota": {
     "title": "Antigravity Quota",

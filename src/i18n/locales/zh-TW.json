@@ -381,7 +381,16 @@
     "batch_disable_confirm": "發現 {{count}} 個問題憑證，是否停用？",
     "batch_disable_button": "停用",
     "batch_disable_success": "成功停用 {{count}} 個憑證",
-    "batch_disable_partial": "停用 {{success}} 個憑證，{{failed}} 個失敗"
+    "batch_disable_partial": "停用 {{success}} 個憑證，{{failed}} 個失敗",
+    "batch_check_and_enable": "檢查並啟用恢復憑證",
+    "batch_enabling": "啟用中...",
+    "batch_check_no_disabled": "沒有已停用的憑證",
+    "batch_check_none_recovered": "沒有發現恢復正常的憑證",
+    "batch_enable_title": "啟用恢復憑證",
+    "batch_enable_confirm": "發現 {{count}} 個憑證已有額度，是否啟用？",
+    "batch_enable_button": "啟用",
+    "batch_enable_success": "成功啟用 {{count}} 個憑證",
+    "batch_enable_partial": "啟用 {{success}} 個憑證，{{failed}} 個失敗"
   },
   "antigravity_quota": {
     "title": "Antigravity 配額",
