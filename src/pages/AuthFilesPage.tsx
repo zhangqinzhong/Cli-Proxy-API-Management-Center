@@ -682,12 +682,12 @@ export function AuthFilesPage() {
               disabled={
                 disableControls ||
                 loading ||
-                batchCheckStatus === 'checking' ||
+                batchCheckStatus === 'checking-disable' ||
                 batchCheckStatus === 'disabling'
               }
-              loading={batchCheckStatus === 'checking' || batchCheckStatus === 'disabling'}
+              loading={batchCheckStatus === 'checking-disable' || batchCheckStatus === 'disabling'}
             >
-              {batchCheckStatus === 'checking'
+              {batchCheckStatus === 'checking-disable'
                 ? t('auth_files.batch_checking', {
                     current: batchCheckProgress.checked,
                     total: batchCheckProgress.total,
@@ -703,14 +703,19 @@ export function AuthFilesPage() {
               disabled={
                 disableControls ||
                 loading ||
-                batchCheckStatus === 'checking' ||
+                batchCheckStatus === 'checking-enable' ||
                 batchCheckStatus === 'enabling'
               }
-              loading={batchCheckStatus === 'enabling'}
+              loading={batchCheckStatus === 'checking-enable' || batchCheckStatus === 'enabling'}
             >
-              {batchCheckStatus === 'enabling'
-                ? t('auth_files.batch_enabling')
-                : t('auth_files.batch_check_and_enable')}
+              {batchCheckStatus === 'checking-enable'
+                ? t('auth_files.batch_checking', {
+                    current: batchCheckProgress.checked,
+                    total: batchCheckProgress.total,
+                  })
+                : batchCheckStatus === 'enabling'
+                  ? t('auth_files.batch_enabling')
+                  : t('auth_files.batch_check_and_enable')}
             </Button>
             <Button
               size="sm"

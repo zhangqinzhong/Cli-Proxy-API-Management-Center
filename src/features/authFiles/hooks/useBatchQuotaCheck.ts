@@ -9,7 +9,13 @@ import { useAuthStore, useNotificationStore } from '@/stores';
 import type { AuthFileItem } from '@/types';
 import { isRuntimeOnlyAuthFile } from '@/features/authFiles/constants';
 
-export type BatchCheckStatus = 'idle' | 'checking' | 'disabling' | 'enabling' | 'done';
+export type BatchCheckStatus =
+  | 'idle'
+  | 'checking-disable'
+  | 'checking-enable'
+  | 'disabling'
+  | 'enabling'
+  | 'done';
 
 export interface UseBatchQuotaCheckResult {
   status: BatchCheckStatus;
@@ -38,9 +44,13 @@ export function useBatchQuotaCheck(): UseBatchQuotaCheckResult {
     setProgress({ checked: 0, total: 0 });
   }, []);
 
-  /** 内部通用检查逻辑：过滤文件 → 调 quota 接口 → 返回 results + authIndexToFile 映射 */
+  /** 内部通用检查逻辑 */
   const runCheck = useCallback(
-    async (targetFiles: AuthFileItem[], onProgress: (checked: number, total: number) => void) => {
+    async (
+      checkingStatus: BatchCheckStatus,
+      targetFiles: AuthFileItem[],
+      onProgress: (checked: number, total: number) => void
+    ) => {
       const authIndexes: string[] = [];
       const authIndexToFile = new Map<string, AuthFileItem>();
       for (const file of targetFiles) {
@@ -48,7 +58,7 @@ export function useBatchQuotaCheck(): UseBatchQuotaCheckResult {
         authIndexes.push(authIndex);
         authIndexToFile.set(authIndex, file);
       }
-      setStatus('checking');
+      setStatus(checkingStatus);
       setProgress({ checked: 0, total: authIndexes.length });
       const results = await cpaUsageKeeperApi.checkCredentialsQuota(
         authIndexes,
@@ -69,8 +79,10 @@ export function useBatchQuotaCheck(): UseBatchQuotaCheckResult {
         return;
       }
       try {
-        const { results, authIndexToFile } = await runCheck(targetFiles, (checked, total) =>
-          setProgress({ checked, total })
+        const { results, authIndexToFile } = await runCheck(
+          'checking-disable',
+          targetFiles,
+          (checked, total) => setProgress({ checked, total })
         );
         const problematic: string[] = [];
         for (const r of results) {
@@ -129,14 +141,18 @@ export function useBatchQuotaCheck(): UseBatchQuotaCheckResult {
   /** 检查已停用凭证，启用恢复正常的 */
   const checkAndEnableRecovered = useCallback(
     async (files: AuthFileItem[], onSuccess?: () => Promise<void>) => {
-      const targetFiles = files.filter((f) => !isRuntimeOnlyAuthFile(f) && f.disabled === true);
+      const targetFiles = files.filter(
+        (f) => !isRuntimeOnlyAuthFile(f) && f.disabled === true
+      );
       if (targetFiles.length === 0) {
         showNotification(t('auth_files.batch_check_no_disabled'), 'info');
         return;
       }
       try {
-        const { results, authIndexToFile } = await runCheck(targetFiles, (checked, total) =>
-          setProgress({ checked, total })
+        const { results, authIndexToFile } = await runCheck(
+          'checking-enable',
+          targetFiles,
+          (checked, total) => setProgress({ checked, total })
         );
         const recovered: string[] = [];
         for (const r of results) {
