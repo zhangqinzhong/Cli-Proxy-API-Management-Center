@@ -142,7 +142,7 @@ export function useBatchQuotaCheck(): UseBatchQuotaCheckResult {
   const checkAndEnableRecovered = useCallback(
     async (files: AuthFileItem[], onSuccess?: () => Promise<void>) => {
       const targetFiles = files.filter(
-        (f) => !isRuntimeOnlyAuthFile(f) && f.disabled === true
+        (f) => !isRuntimeOnlyAuthFile(f) && f.disabled === true && f.status !== 'error'
       );
       if (targetFiles.length === 0) {
         showNotification(t('auth_files.batch_check_no_disabled'), 'info');
