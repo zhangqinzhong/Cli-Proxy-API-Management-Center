@@ -19,14 +19,9 @@ export interface AuthState {
   serverVersion: string | null;
   serverBuildDate: string | null;
   serverRuntimeKind: ServerRuntimeKind;
+  supportsPlugin: boolean;
 }
 
 // 连接状态
 export type ConnectionStatus = 'connected' | 'disconnected' | 'connecting' | 'error';
 export type ServerRuntimeKind = 'unknown' | 'cpa' | 'home';
-
-export interface ConnectionInfo {
-  status: ConnectionStatus;
-  lastCheck: Date | null;
-  error: string | null;
-}

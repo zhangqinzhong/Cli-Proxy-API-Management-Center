@@ -15,7 +15,10 @@ import { ProviderHeaderCard } from './components/ProviderHeaderCard';
 import { ProviderCategoryList } from './components/ProviderCategoryList';
 import { ProviderResourcePanel } from './components/ProviderResourcePanel';
 import type { ProviderPanelControls } from './components/ProviderResourcePanel';
+import { SponsorQuickStartPanel } from './components/SponsorQuickStartPanel';
 import { ProviderSheet, type ProviderSheetHandle } from './sheets/ProviderSheet';
+import { APIKEY_FUN_DISPLAY_NAME } from './sponsor';
+import { isMultiProtocolSponsorBrand } from './sponsorDefinitions';
 import { useProviderWorkbench } from './useProviderWorkbench';
 import {
   getProviderFilterState,
@@ -34,6 +37,10 @@ interface SheetState {
   brand: ProviderBrand;
   mode: SheetMode;
   resource: ProviderResource | null;
+}
+
+interface ProvidersWorkbenchPageProps {
+  fixedBrand?: ProviderBrand;
 }
 
 const formatDateTime = (iso: string, locale?: string) => {
@@ -66,41 +73,6 @@ const matchesFilter = (r: ProviderResource, normalized: string): boolean => {
   return haystack.some((v) => v.includes(normalized));
 };
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  Boolean(value && typeof value === 'object' && !Array.isArray(value));
-
-const getResourceModels = (resource: ProviderResource): string[] => {
-  if (!isRecord(resource.raw)) return [];
-  if (resource.brand === 'ampcode') {
-    const mappings = resource.raw.modelMappings;
-    if (!Array.isArray(mappings)) return [];
-    const seen = new Set<string>();
-    mappings.forEach((mapping) => {
-      if (!isRecord(mapping)) return;
-      const from = typeof mapping.from === 'string' ? mapping.from.trim() : '';
-      const to = typeof mapping.to === 'string' ? mapping.to.trim() : '';
-      if (from) seen.add(from);
-      if (to) seen.add(to);
-    });
-    return Array.from(seen);
-  }
-  const models = resource.raw.models;
-  if (!Array.isArray(models)) return [];
-  const seen = new Set<string>();
-  models.forEach((model) => {
-    if (!isRecord(model)) return;
-    const name = typeof model.name === 'string' ? model.name.trim() : '';
-    if (name) seen.add(name);
-  });
-  return Array.from(seen);
-};
-
-const getResourcePriority = (resource: ProviderResource): number => {
-  if (!isRecord(resource.raw)) return 0;
-  const priority = resource.raw.priority;
-  return typeof priority === 'number' && Number.isFinite(priority) ? priority : 0;
-};
-
 const getResourceSortName = (resource: ProviderResource): string =>
   (resource.name ?? resource.identifier ?? resource.apiKeyPreview ?? '').toLowerCase();
 
@@ -108,22 +80,23 @@ const getResourceRecentSuccess = (
   resource: ProviderResource,
   usageByProvider: ProviderRecentUsageMap
 ): number => {
-  if (resource.brand === 'openaiCompatibility') {
-    return getOpenAIProviderRecentWindowStats(
-      resource.raw as OpenAIProviderConfig,
-      usageByProvider
-    ).success;
+  if (isMultiProtocolSponsorBrand(resource.brand)) {
+    return 0;
   }
-  if (resource.brand === 'ampcode') return 0;
+  if (resource.brand === 'openaiCompatibility') {
+    return getOpenAIProviderRecentWindowStats(resource.raw as OpenAIProviderConfig, usageByProvider)
+      .success;
+  }
+  const usageProvider = resource.brand === 'claudeApi' ? 'claude' : resource.brand;
   return getProviderRecentWindowStats(
     usageByProvider,
-    resource.brand,
+    usageProvider,
     resource.apiKey ?? undefined,
     resource.baseUrl ?? undefined
   ).success;
 };
 
-export function ProvidersWorkbenchPage() {
+export function ProvidersWorkbenchPage({ fixedBrand }: ProvidersWorkbenchPageProps = {}) {
   const { t, i18n } = useTranslation();
   const connectionStatus = useAuthStore((s) => s.connectionStatus);
   const { showNotification, showConfirmation } = useNotificationStore();
@@ -132,9 +105,7 @@ export function ProvidersWorkbenchPage() {
   const isCurrentLayer = pageTransitionLayer ? pageTransitionLayer.status === 'current' : true;
 
   const workbench = useProviderWorkbench();
-  const [uiState, setUiState] = useState<ProvidersWorkbenchUiState>(
-    readProvidersWorkbenchUiState
-  );
+  const [uiState, setUiState] = useState<ProvidersWorkbenchUiState>(readProvidersWorkbenchUiState);
   const [sheetState, setSheetState] = useState<SheetState>({
     open: false,
     brand: 'gemini',
@@ -149,10 +120,7 @@ export function ProvidersWorkbenchPage() {
   });
 
   const handleRefresh = useCallback(async () => {
-    await Promise.allSettled([
-      workbench.refetch(),
-      refreshRecentRequests().catch(() => undefined),
-    ]);
+    await Promise.allSettled([workbench.refetch(), refreshRecentRequests().catch(() => undefined)]);
   }, [refreshRecentRequests, workbench]);
 
   useHeaderRefresh(handleRefresh, isCurrentLayer);
@@ -179,16 +147,35 @@ export function ProvidersWorkbenchPage() {
     [persistUiState]
   );
 
+  const allGroups = useMemo(() => workbench.snapshot?.groups ?? [], [workbench.snapshot]);
+  const groups = useMemo(
+    () =>
+      fixedBrand
+        ? allGroups.filter((group) => group.id === fixedBrand)
+        : allGroups.filter((group) => group.id !== 'apikeyFun'),
+    [allGroups, fixedBrand]
+  );
+  const firstVisibleBrand = groups[0]?.id ?? fixedBrand ?? 'gemini';
+  const activeBrand =
+    fixedBrand ??
+    (groups.some((group) => group.id === uiState.activeBrand)
+      ? uiState.activeBrand
+      : firstVisibleBrand);
+  const activeFilterState = getProviderFilterState(uiState, activeBrand);
+  const filter = activeFilterState.filter;
+  const providerSortBy = activeFilterState.sortBy;
+  const providerSortDir = activeFilterState.sortDir;
+  const activeGroup = groups.find((g) => g.id === activeBrand) ?? groups[0] ?? null;
+
   const updateActiveFilterState = useCallback(
     (patch: Partial<ProviderFilterState>) => {
       persistUiState((prev) => {
-        const brand = prev.activeBrand;
-        const current = getProviderFilterState(prev, brand);
+        const current = getProviderFilterState(prev, activeBrand);
         return {
           ...prev,
           filtersByBrand: {
             ...prev.filtersByBrand,
-            [brand]: {
+            [activeBrand]: {
               ...current,
               ...patch,
             },
@@ -196,17 +183,8 @@ export function ProvidersWorkbenchPage() {
         };
       });
     },
-    [persistUiState]
+    [activeBrand, persistUiState]
   );
-
-  const groups = useMemo(() => workbench.snapshot?.groups ?? [], [workbench.snapshot]);
-  const activeBrand = uiState.activeBrand;
-  const activeFilterState = getProviderFilterState(uiState, activeBrand);
-  const filter = activeFilterState.filter;
-  const providerSortBy = activeFilterState.sortBy;
-  const providerSortDir = activeFilterState.sortDir;
-  const activeGroup =
-    groups.find((g) => g.id === activeBrand) ?? groups[0] ?? null;
 
   const filteredResources = useMemo(() => {
     if (!activeGroup) return [];
@@ -218,7 +196,7 @@ export function ProvidersWorkbenchPage() {
     if (!activeGroup) return [];
     const seen = new Set<string>();
     activeGroup.resources.forEach((r) => {
-      getResourceModels(r).forEach((name) => seen.add(name));
+      r.models.forEach((name) => seen.add(name));
     });
     return Array.from(seen).sort();
   }, [activeGroup]);
@@ -226,18 +204,13 @@ export function ProvidersWorkbenchPage() {
   const selectedModels = useMemo(() => {
     if (availableModels.length === 0) return new Set<string>();
     const availableModelSet = new Set(availableModels);
-    return new Set(
-      activeFilterState.selectedModels.filter((name) => availableModelSet.has(name))
-    );
+    return new Set(activeFilterState.selectedModels.filter((name) => availableModelSet.has(name)));
   }, [activeFilterState.selectedModels, availableModels]);
 
   const visibleResources = useMemo(() => {
     let arr = filteredResources;
     if (selectedModels.size > 0) {
-      arr = arr.filter((r) => {
-        const models = getResourceModels(r);
-        return models.some((name) => selectedModels.has(name));
-      });
+      arr = arr.filter((r) => r.models.some((name) => selectedModels.has(name)));
     }
 
     const sorted = [...arr].sort((a, b) => {
@@ -245,9 +218,7 @@ export function ProvidersWorkbenchPage() {
       if (providerSortBy === 'name') {
         diff = getResourceSortName(a).localeCompare(getResourceSortName(b));
       } else if (providerSortBy === 'priority') {
-        const ap = getResourcePriority(a);
-        const bp = getResourcePriority(b);
-        diff = ap - bp;
+        diff = a.priority - b.priority;
       } else {
         diff =
           getResourceRecentSuccess(a, usageByProvider) -
@@ -260,13 +231,7 @@ export function ProvidersWorkbenchPage() {
     });
 
     return sorted;
-  }, [
-    filteredResources,
-    providerSortBy,
-    providerSortDir,
-    selectedModels,
-    usageByProvider,
-  ]);
+  }, [filteredResources, providerSortBy, providerSortDir, selectedModels, usageByProvider]);
 
   const toolbarControls = useMemo<ProviderPanelControls | undefined>(() => {
     if (!activeGroup) return undefined;
@@ -292,48 +257,39 @@ export function ProvidersWorkbenchPage() {
   ]);
 
   const totalResources = useMemo(
-    () =>
-      groups.reduce(
-        (sum, g) => sum + g.resources.filter((r) => !r.flags.isPlaceholder).length,
-        0
-      ),
+    () => groups.reduce((sum, g) => sum + g.resources.length, 0),
     [groups]
   );
 
   const totalActive = useMemo(
-    () =>
-      groups.reduce(
-        (sum, g) =>
-          sum +
-          g.resources.filter((r) => !r.disabled && !r.flags.isPlaceholder).length,
-        0
-      ),
+    () => groups.reduce((sum, g) => sum + g.resources.filter((r) => !r.disabled).length, 0),
     [groups]
   );
 
   const providerFamilies = useMemo(
-    () =>
-      groups.filter(
-        (g) => g.resources.some((r) => !r.flags.isPlaceholder)
-      ).length,
+    () => groups.filter((g) => g.resources.length > 0).length,
     [groups]
+  );
+  const quickStartResource = useMemo(
+    () =>
+      fixedBrand === 'apikeyFun' && activeGroup ? (activeGroup.resources[0] ?? null) : null,
+    [activeGroup, fixedBrand]
   );
 
   const updatedAtLabel = workbench.snapshot
     ? formatDateTime(workbench.snapshot.fetchedAt, i18n.language)
     : t('providersPage.modelCatalog.notLoaded');
+  const headerTitle =
+    fixedBrand === 'apikeyFun'
+      ? quickStartResource
+        ? APIKEY_FUN_DISPLAY_NAME
+        : t('nav.quick_start')
+      : undefined;
 
   const openCreate = useCallback(() => {
     const brand = activeBrand;
-    if (brand === 'ampcode') {
-      // ampcode 走单例编辑
-      const r =
-        groups.find((g) => g.id === 'ampcode')?.resources[0] ?? null;
-      setSheetState({ open: true, brand: 'ampcode', mode: 'edit', resource: r });
-    } else {
-      setSheetState({ open: true, brand, mode: 'create', resource: null });
-    }
-  }, [activeBrand, groups]);
+    setSheetState({ open: true, brand, mode: 'create', resource: null });
+  }, [activeBrand]);
 
   const openView = useCallback((resource: ProviderResource) => {
     setSheetState({
@@ -359,20 +315,12 @@ export function ProvidersWorkbenchPage() {
 
   const handleDelete = useCallback(
     (resource: ProviderResource) => {
-      const isAmpcode = resource.brand === 'ampcode';
-      const name =
-        resource.name ?? resource.apiKeyPreview ?? resource.identifier ?? '';
+      const name = resource.name ?? resource.apiKeyPreview ?? resource.identifier ?? '';
       showConfirmation({
-        title: isAmpcode
-          ? t('providersPage.delete.ampcodeTitle')
-          : t('providersPage.delete.title'),
-        message: isAmpcode
-          ? t('providersPage.delete.ampcodeConfirm')
-          : t('providersPage.delete.confirm', { name }),
+        title: t('providersPage.delete.title'),
+        message: t('providersPage.delete.confirm', { name }),
         variant: 'danger',
-        confirmText: isAmpcode
-          ? t('providersPage.actions.clear')
-          : t('providersPage.actions.delete'),
+        confirmText: t('providersPage.actions.delete'),
         onConfirm: async () => {
           try {
             await workbench.deleteProvider(resource);
@@ -392,17 +340,12 @@ export function ProvidersWorkbenchPage() {
       try {
         await workbench.toggleDisabled(resource, disabled);
         showNotification(
-          disabled
-            ? t('providersPage.toast.disabled')
-            : t('providersPage.toast.enabled'),
+          disabled ? t('providersPage.toast.disabled') : t('providersPage.toast.enabled'),
           'success'
         );
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        showNotification(
-          `${t('providersPage.toast.toggleFailed')}: ${msg}`,
-          'error'
-        );
+        showNotification(`${t('providersPage.toast.toggleFailed')}: ${msg}`, 'error');
       }
     },
     [showNotification, t, workbench]
@@ -435,6 +378,7 @@ export function ProvidersWorkbenchPage() {
     return (
       <div className={styles.page}>
         <ProviderHeaderCard
+          title={headerTitle}
           totalActive={0}
           totalResources={0}
           providerFamilies={0}
@@ -443,82 +387,92 @@ export function ProvidersWorkbenchPage() {
           onRefresh={() => void handleRefresh()}
           onNew={() => {}}
           isNewDisabled
+          showNewAction={!fixedBrand}
+          showSummary={fixedBrand !== 'apikeyFun'}
         />
       </div>
     );
   }
 
-  const ampcodeBrandActive = activeBrand === 'ampcode';
-
   return (
     <div className={styles.page}>
       <ProviderHeaderCard
+        title={headerTitle}
         totalActive={totalActive}
         totalResources={totalResources}
         providerFamilies={providerFamilies}
         updatedAtLabel={updatedAtLabel}
-        issueCount={workbench.snapshot?.issues.length ?? 0}
         isFetching={workbench.isFetching}
-        isNewDisabled={disableMutations && !ampcodeBrandActive}
-        newLabel={
-          ampcodeBrandActive
-            ? t('providersPage.actions.edit')
-            : t('providersPage.actions.new')
-        }
+        isNewDisabled={disableMutations}
+        showNewAction={!fixedBrand}
+        showSummary={fixedBrand !== 'apikeyFun'}
+        newLabel={t('providersPage.actions.new')}
+        variant={fixedBrand === 'apikeyFun' ? 'quickStart' : undefined}
         onRefresh={() => void handleRefresh()}
         onNew={openCreate}
       />
 
-      <div className={styles.layout}>
-        <ProviderCategoryList
-          groups={groups}
-          activeBrand={activeGroup.id}
-          onSelect={(brand) => {
-            const isSwitching = sheetState.open && sheetState.brand !== brand;
-            const proceed = isSwitching && sheetRef.current
-              ? sheetRef.current.confirmDiscardIfDirty()
-              : Promise.resolve(true);
-            void proceed.then((ok) => {
-              if (!ok) return;
-              setActiveBrand(brand);
-              if (isSwitching) {
-                closeSheet();
-              }
-            });
-          }}
-        />
-        <ProviderResourcePanel
-          group={activeGroup}
-          filter={filter}
-          onFilterChange={(value) => updateActiveFilterState({ filter: value })}
-          filteredResources={visibleResources}
-          selectedId={sheetState.open ? sheetState.resource?.id ?? null : null}
-          disableMutations={disableMutations}
-          usageByProvider={usageByProvider}
-          toolbarControls={toolbarControls}
-          onView={openView}
-          onEdit={openEdit}
-          onDelete={handleDelete}
-          onToggleDisabled={handleToggleDisabled}
-          onCreate={openCreate}
-        />
+      <div className={`${styles.layout} ${fixedBrand ? styles.layoutSingle : ''}`.trim()}>
+        {!fixedBrand ? (
+          <ProviderCategoryList
+            groups={groups}
+            activeBrand={activeGroup.id}
+            onSelect={(brand) => {
+              const isSwitching = sheetState.open && sheetState.brand !== brand;
+              const proceed =
+                isSwitching && sheetRef.current
+                  ? sheetRef.current.confirmDiscardIfDirty()
+                  : Promise.resolve(true);
+              void proceed.then((ok) => {
+                if (!ok) return;
+                setActiveBrand(brand);
+                if (isSwitching) {
+                  closeSheet();
+                }
+              });
+            }}
+          />
+        ) : null}
+        {fixedBrand === 'apikeyFun' ? (
+          <SponsorQuickStartPanel
+            resource={quickStartResource}
+            workbench={workbench}
+            mutationDisabled={disableMutations}
+          />
+        ) : (
+          <ProviderResourcePanel
+            group={activeGroup}
+            filter={filter}
+            onFilterChange={(value) => updateActiveFilterState({ filter: value })}
+            filteredResources={visibleResources}
+            selectedId={sheetState.open ? (sheetState.resource?.id ?? null) : null}
+            disableMutations={disableMutations}
+            usageByProvider={usageByProvider}
+            toolbarControls={toolbarControls}
+            onView={openView}
+            onEdit={openEdit}
+            onDelete={handleDelete}
+            onToggleDisabled={handleToggleDisabled}
+            onCreate={openCreate}
+          />
+        )}
       </div>
 
-      <ProviderSheet
-        ref={sheetRef}
-        state={sheetState}
-        onClose={closeSheet}
-        onSwitchToEdit={() => {
-          setSheetState((s) =>
-            s.resource ? { ...s, mode: 'edit' } : s
-          );
-        }}
-        workbench={workbench}
-        onCreated={handleCreated}
-        onUpdated={handleUpdated}
-        mutationDisabled={disableMutations}
-        usageByProvider={usageByProvider}
-      />
+      {!fixedBrand ? (
+        <ProviderSheet
+          ref={sheetRef}
+          state={sheetState}
+          onClose={closeSheet}
+          onSwitchToEdit={() => {
+            setSheetState((s) => (s.resource ? { ...s, mode: 'edit' } : s));
+          }}
+          workbench={workbench}
+          onCreated={handleCreated}
+          onUpdated={handleUpdated}
+          mutationDisabled={disableMutations}
+          usageByProvider={usageByProvider}
+        />
+      ) : null}
     </div>
   );
 }

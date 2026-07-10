@@ -18,17 +18,18 @@ export const MANAGEMENT_API_PREFIX = '/v0/management';
 export const REQUEST_TIMEOUT_MS = 30 * 1000;
 export const CPA_VERSION_HEADER_KEYS = ['x-cpa-version'];
 export const CPA_BUILD_DATE_HEADER_KEYS = ['x-cpa-build-date'];
+export const CPA_SUPPORT_PLUGIN_HEADER_KEYS = ['x-cpa-support-plugin'];
 export const HOME_VERSION_HEADER_KEYS = ['x-cpa-home-version'];
 export const HOME_BUILD_DATE_HEADER_KEYS = ['x-cpa-home-build-date'];
 export const VERSION_HEADER_KEYS = [
   ...HOME_VERSION_HEADER_KEYS,
   ...CPA_VERSION_HEADER_KEYS,
-  'x-server-version'
+  'x-server-version',
 ];
 export const BUILD_DATE_HEADER_KEYS = [
   ...HOME_BUILD_DATE_HEADER_KEYS,
   ...CPA_BUILD_DATE_HEADER_KEYS,
-  'x-server-build-date'
+  'x-server-build-date',
 ];
 
 // 日志相关
@@ -48,7 +49,7 @@ export const LANGUAGE_LABEL_KEYS: Record<Language, string> = {
   'zh-CN': 'language.chinese',
   'zh-TW': 'language.chinese_tw',
   en: 'language.english',
-  ru: 'language.russian'
+  ru: 'language.russian',
 };
 export const SUPPORTED_LANGUAGES = LANGUAGE_ORDER;
 

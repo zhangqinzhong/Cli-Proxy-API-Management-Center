@@ -26,38 +26,11 @@ export const withDisableAllModelsRule = (models?: string[]) => {
   return [...base, DISABLE_ALL_MODELS_RULE];
 };
 
-export const withoutDisableAllModelsRule = (models?: string[]) =>
-  stripDisableAllModelsRule(models);
+export const withoutDisableAllModelsRule = (models?: string[]) => stripDisableAllModelsRule(models);
 
-const normalizeOpenAIBaseUrl = (baseUrl: string): string => {
+const normalizeUpstreamBaseUrl = (baseUrl: string, fallback = ''): string => {
   let trimmed = String(baseUrl || '').trim();
-  if (!trimmed) return '';
-  trimmed = trimmed.replace(/\/?v0\/management\/?$/i, '');
-  trimmed = trimmed.replace(/\/+$/g, '');
-  if (!/^https?:\/\//i.test(trimmed)) {
-    trimmed = `http://${trimmed}`;
-  }
-  return trimmed;
-};
-
-const normalizeClaudeBaseUrl = (baseUrl: string): string => {
-  let trimmed = String(baseUrl || '').trim();
-  if (!trimmed) {
-    return 'https://api.anthropic.com';
-  }
-  trimmed = trimmed.replace(/\/?v0\/management\/?$/i, '');
-  trimmed = trimmed.replace(/\/+$/g, '');
-  if (!/^https?:\/\//i.test(trimmed)) {
-    trimmed = `http://${trimmed}`;
-  }
-  return trimmed;
-};
-
-const normalizeGeminiBaseUrl = (baseUrl: string): string => {
-  let trimmed = String(baseUrl || '').trim();
-  if (!trimmed) {
-    return DEFAULT_GEMINI_BASE_URL;
-  }
+  if (!trimmed) return fallback;
   trimmed = trimmed.replace(/\/?v0\/management\/?$/i, '');
   trimmed = trimmed.replace(/\/+$/g, '');
   if (!/^https?:\/\//i.test(trimmed)) {
@@ -81,7 +54,7 @@ const buildGeminiModelResource = (model: string): string => {
 };
 
 export const buildOpenAIChatCompletionsEndpoint = (baseUrl: string): string => {
-  const trimmed = normalizeOpenAIBaseUrl(baseUrl);
+  const trimmed = normalizeUpstreamBaseUrl(baseUrl);
   if (!trimmed) return '';
   if (trimmed.endsWith('/chat/completions')) {
     return trimmed;
@@ -89,8 +62,23 @@ export const buildOpenAIChatCompletionsEndpoint = (baseUrl: string): string => {
   return `${trimmed}/chat/completions`;
 };
 
+export const buildCodexResponsesEndpoint = (baseUrl: string): string => {
+  const trimmed = normalizeUpstreamBaseUrl(baseUrl);
+  if (!trimmed) return '';
+  if (/\/v1\/responses$/i.test(trimmed)) {
+    return trimmed;
+  }
+  if (/\/v1\/models$/i.test(trimmed)) {
+    return trimmed.replace(/\/models$/i, '/responses');
+  }
+  if (/\/v1$/i.test(trimmed)) {
+    return `${trimmed}/responses`;
+  }
+  return `${trimmed}/v1/responses`;
+};
+
 export const buildClaudeMessagesEndpoint = (baseUrl: string): string => {
-  const trimmed = normalizeClaudeBaseUrl(baseUrl);
+  const trimmed = normalizeUpstreamBaseUrl(baseUrl, 'https://api.anthropic.com');
   if (!trimmed) return '';
   if (trimmed.endsWith('/v1/messages')) {
     return trimmed;
@@ -101,14 +89,11 @@ export const buildClaudeMessagesEndpoint = (baseUrl: string): string => {
   return `${trimmed}/v1/messages`;
 };
 
-export const buildGeminiGenerateContentEndpoint = (
-  baseUrl: string,
-  model: string
-): string => {
+export const buildGeminiGenerateContentEndpoint = (baseUrl: string, model: string): string => {
   const resource = buildGeminiModelResource(model);
   if (!resource) return '';
 
-  const trimmed = normalizeGeminiBaseUrl(baseUrl);
+  const trimmed = normalizeUpstreamBaseUrl(baseUrl, DEFAULT_GEMINI_BASE_URL);
   if (!trimmed) return '';
   if (/:generateContent$/i.test(trimmed)) {
     return trimmed;
@@ -134,7 +119,9 @@ const EMPTY_RECENT_USAGE_ENTRY: RecentRequestUsageEntry = {
 };
 
 const normalizeProviderRecentKey = (value: unknown): string =>
-  String(value ?? '').trim().toLowerCase();
+  String(value ?? '')
+    .trim()
+    .toLowerCase();
 
 const getProviderRecentUsageEntry = (
   usageByProvider: ProviderRecentUsageMap,

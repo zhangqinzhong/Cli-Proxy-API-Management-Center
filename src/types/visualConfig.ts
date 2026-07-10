@@ -1,5 +1,7 @@
 export type PayloadParamValueType = 'string' | 'number' | 'boolean' | 'json';
 export type DisableImageGenerationMode = 'false' | 'true' | 'chat';
+export type PluginStoreAuthType = 'none' | 'bearer' | 'basic' | 'header' | 'github-token';
+export type PluginStoreAuthApplyTo = 'registry' | 'metadata' | 'artifact';
 export type PayloadParamValidationErrorCode =
   | 'payload_invalid_number'
   | 'payload_invalid_boolean'
@@ -67,6 +69,19 @@ export interface StreamingConfig {
   nonstreamKeepaliveInterval: string;
 }
 
+export type PluginStoreAuthRule = {
+  id: string;
+  match: string;
+  applyTo: PluginStoreAuthApplyTo[];
+  type: PluginStoreAuthType;
+  tokenEnv: string;
+  usernameEnv: string;
+  passwordEnv: string;
+  headerName: string;
+  headerValueEnv: string;
+  allowInsecure: boolean;
+};
+
 export type VisualConfigValues = {
   host: string;
   port: string;
@@ -80,6 +95,9 @@ export type VisualConfigValues = {
   rmPanelRepo: string;
   authDir: string;
   apiKeysText: string;
+  pluginsEnabled: boolean;
+  pluginStoreSources: string[];
+  pluginStoreAuth: PluginStoreAuthRule[];
   debug: boolean;
   commercialMode: boolean;
   loggingToFile: boolean;
@@ -95,6 +113,7 @@ export type VisualConfigValues = {
   maxRetryInterval: string;
   disableCooling: boolean;
   disableImageGeneration: DisableImageGenerationMode;
+  gptImage2BaseModel: string;
   authAutoRefreshWorkers: string;
   quotaSwitchProject: boolean;
   quotaSwitchPreviewModel: boolean;
@@ -103,7 +122,6 @@ export type VisualConfigValues = {
   routingSessionAffinity: boolean;
   routingSessionAffinityTTL: string;
   wsAuth: boolean;
-  enableGeminiCliEndpoint: boolean;
   antigravitySignatureCacheEnabled: boolean;
   antigravitySignatureBypassStrict: boolean;
   claudeHeaderUserAgent: string;
@@ -115,6 +133,7 @@ export type VisualConfigValues = {
   claudeHeaderStabilizeDeviceProfile: boolean;
   codexHeaderUserAgent: string;
   codexHeaderBetaFeatures: string;
+  codexIdentityConfuse: boolean;
   payloadDefaultRules: PayloadRule[];
   payloadDefaultRawRules: PayloadRule[];
   payloadOverrideRules: PayloadRule[];
@@ -141,6 +160,9 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
   rmPanelRepo: '',
   authDir: '',
   apiKeysText: '',
+  pluginsEnabled: false,
+  pluginStoreSources: [],
+  pluginStoreAuth: [],
   debug: false,
   commercialMode: false,
   loggingToFile: false,
@@ -156,6 +178,7 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
   maxRetryInterval: '',
   disableCooling: false,
   disableImageGeneration: 'false',
+  gptImage2BaseModel: '',
   authAutoRefreshWorkers: '',
   quotaSwitchProject: true,
   quotaSwitchPreviewModel: true,
@@ -164,7 +187,6 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
   routingSessionAffinity: false,
   routingSessionAffinityTTL: '',
   wsAuth: false,
-  enableGeminiCliEndpoint: false,
   antigravitySignatureCacheEnabled: true,
   antigravitySignatureBypassStrict: false,
   claudeHeaderUserAgent: '',
@@ -176,6 +198,7 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
   claudeHeaderStabilizeDeviceProfile: false,
   codexHeaderUserAgent: '',
   codexHeaderBetaFeatures: '',
+  codexIdentityConfuse: false,
   payloadDefaultRules: [],
   payloadDefaultRawRules: [],
   payloadOverrideRules: [],

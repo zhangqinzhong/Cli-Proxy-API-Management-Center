@@ -27,6 +27,7 @@ import {
 import type { OpenAIProviderConfig } from '@/types';
 import type { StatusBarData } from '@/utils/recentRequests';
 import type { ProviderResource } from '../types';
+import { isMultiProtocolSponsorBrand } from '../sponsorDefinitions';
 import styles from './ProviderResourceTable.module.scss';
 import statusBarStyles from './providerStatusBar.module.scss';
 
@@ -41,21 +42,24 @@ interface ProviderResourceTableProps {
   onToggleDisabled?: (resource: ProviderResource, disabled: boolean) => void;
 }
 
-const columnWidths = ['18%', '18%', '6%', '14%', '24%', '20%'];
+const columnWidths = ['180px', '220px', '72px', '138px', '174px', '176px'];
+
+const isSponsorResource = (resource: ProviderResource): boolean =>
+  isMultiProtocolSponsorBrand(resource.brand);
+
+const getUsageProvider = (resource: ProviderResource): string =>
+  resource.brand === 'claudeApi' ? 'claude' : resource.brand;
 
 const resolveStatusBarData = (
   resource: ProviderResource,
   usageByProvider: ProviderRecentUsageMap
 ): StatusBarData => {
   if (resource.brand === 'openaiCompatibility') {
-    return getOpenAIProviderRecentStatusData(
-      resource.raw as OpenAIProviderConfig,
-      usageByProvider
-    );
+    return getOpenAIProviderRecentStatusData(resource.raw as OpenAIProviderConfig, usageByProvider);
   }
   return getProviderRecentStatusData(
     usageByProvider,
-    resource.brand,
+    getUsageProvider(resource),
     resource.apiKey ?? undefined,
     resource.baseUrl ?? undefined
   );
@@ -66,14 +70,11 @@ const resolveTotalStats = (
   usageByProvider: ProviderRecentUsageMap
 ): { success: number; failure: number } => {
   if (resource.brand === 'openaiCompatibility') {
-    return getOpenAIProviderTotalStats(
-      resource.raw as OpenAIProviderConfig,
-      usageByProvider
-    );
+    return getOpenAIProviderTotalStats(resource.raw as OpenAIProviderConfig, usageByProvider);
   }
   return getProviderTotalStats(
     usageByProvider,
-    resource.brand,
+    getUsageProvider(resource),
     resource.apiKey ?? undefined,
     resource.baseUrl ?? undefined
   );
@@ -104,23 +105,29 @@ export function ProviderResourceTable({
     </span>
   );
 
+  const renderProtocolSummary = (r: ProviderResource) =>
+    (r.flags.protocols ?? [])
+      .map((protocol) => t(`providersPage.sponsor.protocols.${protocol}`))
+      .join(' / ');
+
   const renderModelsSummary = (r: ProviderResource) => {
     const items: ReactNode[] = [];
+    if (isSponsorResource(r)) {
+      (r.flags.protocols ?? []).forEach((protocol) => {
+        items.push(renderFlagTag(protocol, t(`providersPage.sponsor.protocols.${protocol}`)));
+      });
+      return <div className={styles.metricsCell}>{items}</div>;
+    }
     if (r.brand === 'openaiCompatibility') {
       items.push(
         renderMetric('models', t('providersPage.table.metrics.models'), r.modelCount),
         renderMetric('keys', t('providersPage.table.metrics.keys'), r.apiKeyEntryCount),
-        renderMetric('headers', t('providersPage.table.metrics.headers'), r.headerCount),
-      );
-    } else if (r.brand === 'ampcode') {
-      items.push(
-        renderMetric('mappings', t('providersPage.table.metrics.mappings'), r.modelCount),
-        renderMetric('keys', t('providersPage.table.metrics.keys'), r.apiKeyEntryCount),
+        renderMetric('headers', t('providersPage.table.metrics.headers'), r.headerCount)
       );
     } else {
       items.push(
         renderMetric('models', t('providersPage.table.metrics.models'), r.modelCount),
-        renderMetric('headers', t('providersPage.table.metrics.headers'), r.headerCount),
+        renderMetric('headers', t('providersPage.table.metrics.headers'), r.headerCount)
       );
       if (r.brand === 'codex' && r.flags.websockets) {
         items.push(renderFlagTag('ws', t('providersPage.table.websocketsTag')));
@@ -133,14 +140,6 @@ export function ProviderResourceTable({
   };
 
   const renderStatus = (r: ProviderResource) => {
-    if (r.brand === 'ampcode' && r.flags.isPlaceholder) {
-      return (
-        <span className={`${styles.statusBadge} ${styles.statusDisabled}`}>
-          <IconAlertTriangle size={14} />
-          {t('providersPage.status.notConfigured')}
-        </span>
-      );
-    }
     if (r.disabled) {
       return (
         <span className={`${styles.statusBadge} ${styles.statusDisabled}`}>
@@ -158,38 +157,37 @@ export function ProviderResourceTable({
   };
 
   const renderPrimary = (r: ProviderResource) => {
+    if (isSponsorResource(r)) {
+      return (
+        <div className={styles.primaryCell}>
+          <span className={styles.primaryName}>{r.name ?? r.identifier}</span>
+          <span className={styles.primarySub}>
+            {r.apiKeyPreview ?? t('providersPage.status.notConfigured')}
+          </span>
+        </div>
+      );
+    }
     if (r.brand === 'openaiCompatibility') {
       const extra = r.apiKeyEntryCount > 1 ? ` · +${r.apiKeyEntryCount - 1}` : '';
       return (
         <div className={styles.primaryCell}>
           <span className={styles.primaryName}>{r.name ?? r.identifier}</span>
-          <span className={styles.primarySub}>
-            {(r.apiKeyPreview ?? '—') + extra}
-          </span>
-        </div>
-      );
-    }
-    if (r.brand === 'ampcode') {
-      return (
-        <div className={styles.primaryCell}>
-          <span className={styles.primaryName}>Amp CLI</span>
-          <span className={styles.primarySub}>
-            {r.apiKeyPreview ?? t('providersPage.table.noFallbackKey')}
-          </span>
+          <span className={styles.primarySub}>{(r.apiKeyPreview ?? '—') + extra}</span>
         </div>
       );
     }
     return (
       <div className={styles.primaryCell}>
         <span className={styles.primaryName}>{r.apiKeyPreview ?? '—'}</span>
-        {r.authIndex ? (
-          <span className={styles.primarySub}>auth: {r.authIndex}</span>
-        ) : null}
+        {r.authIndex ? <span className={styles.primarySub}>auth: {r.authIndex}</span> : null}
       </div>
     );
   };
 
   const renderBaseUrl = (r: ProviderResource) => {
+    if (isSponsorResource(r)) {
+      return <span className={styles.baseUrl}>{renderProtocolSummary(r)}</span>;
+    }
     if (r.brand === 'claude' && !r.baseUrl) {
       return (
         <span className={styles.baseUrl}>
@@ -197,18 +195,12 @@ export function ProviderResourceTable({
         </span>
       );
     }
-    if (r.brand === 'ampcode' && !r.baseUrl) {
-      return <span className={styles.baseUrl}>{t('providersPage.status.notConfigured')}</span>;
-    }
-    return (
-      <span className={styles.baseUrl}>
-        {r.baseUrl ?? t('providersPage.status.notSet')}
-      </span>
-    );
+    return <span className={styles.baseUrl}>{r.baseUrl ?? t('providersPage.status.notSet')}</span>;
   };
 
   return (
     <Table
+      className={styles.providerTable}
       cols={columnWidths.map((w, i) => (
         <col key={i} style={{ width: w }} />
       ))}
@@ -220,20 +212,19 @@ export function ProviderResourceTable({
           <TableHead>{t('providersPage.table.prefix')}</TableHead>
           <TableHead>{t('providersPage.table.models')}</TableHead>
           <TableHead>{t('providersPage.table.status')}</TableHead>
-          <TableHead alignRight>{t('providersPage.table.actions')}</TableHead>
+          <TableHead alignRight className={styles.actionsHead}>
+            {t('providersPage.table.actions')}
+          </TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {resources.map((resource) => {
-          const isAmpcode = resource.brand === 'ampcode';
           return (
             <TableRow key={resource.id} selected={resource.id === selectedId}>
               <TableCell>{renderPrimary(resource)}</TableCell>
               <TableCell>{renderBaseUrl(resource)}</TableCell>
               <TableCell>
-                {resource.brand === 'ampcode' ? (
-                  <span className={styles.baseUrl}>—</span>
-                ) : resource.prefix ? (
+                {resource.prefix ? (
                   <span className={styles.chip}>{resource.prefix}</span>
                 ) : (
                   <span className={styles.baseUrl}>{t('providersPage.status.none')}</span>
@@ -243,7 +234,7 @@ export function ProviderResourceTable({
               <TableCell>
                 <div className={styles.statusCell}>
                   {renderStatus(resource)}
-                  {usageByProvider && resource.brand !== 'ampcode' ? (
+                  {usageByProvider && !isSponsorResource(resource) ? (
                     <>
                       {(() => {
                         const stats = resolveTotalStats(resource, usageByProvider);
@@ -258,27 +249,32 @@ export function ProviderResourceTable({
                           </div>
                         );
                       })()}
-                      <ProviderStatusBar
-                        statusData={resolveStatusBarData(resource, usageByProvider)}
-                        styles={statusBarStyles}
-                      />
+                      <div className={styles.statusBarWrap}>
+                        <ProviderStatusBar
+                          statusData={resolveStatusBarData(resource, usageByProvider)}
+                          styles={statusBarStyles}
+                        />
+                      </div>
                     </>
                   ) : null}
                 </div>
               </TableCell>
-              <TableCell alignRight>
+              <TableCell
+                alignRight
+                className={[
+                  styles.actionsCell,
+                  resource.id === selectedId ? styles.actionsCellSelected : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+              >
                 <div className={styles.actions}>
-                  {!isAmpcode && onToggleDisabled ? (
-                    <span
-                      className={styles.toggleWrap}
-                      onClick={(e) => e.stopPropagation()}
-                    >
+                  {onToggleDisabled ? (
+                    <span className={styles.toggleWrap} onClick={(e) => e.stopPropagation()}>
                       <ToggleSwitch
                         checked={!resource.disabled}
                         disabled={disableMutations}
-                        onChange={(value) =>
-                          onToggleDisabled(resource, !value)
-                        }
+                        onChange={(value) => onToggleDisabled(resource, !value)}
                         ariaLabel={
                           resource.disabled
                             ? t('providersPage.actions.enable')
@@ -312,35 +308,19 @@ export function ProviderResourceTable({
                   >
                     <IconPencil size={16} />
                   </button>
-                  {isAmpcode ? (
-                    <button
-                      type="button"
-                      className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
-                      aria-label={t('providersPage.actions.clear')}
-                      title={t('providersPage.actions.clear')}
-                      disabled={disableMutations || resource.flags.isPlaceholder}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDelete(resource);
-                      }}
-                    >
-                      <IconTrash2 size={16} />
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
-                      aria-label={t('providersPage.actions.delete')}
-                      title={t('providersPage.actions.delete')}
-                      disabled={disableMutations}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDelete(resource);
-                      }}
-                    >
-                      <IconTrash2 size={16} />
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
+                    aria-label={t('providersPage.actions.delete')}
+                    title={t('providersPage.actions.delete')}
+                    disabled={disableMutations}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(resource);
+                    }}
+                  >
+                    <IconTrash2 size={16} />
+                  </button>
                 </div>
               </TableCell>
             </TableRow>
