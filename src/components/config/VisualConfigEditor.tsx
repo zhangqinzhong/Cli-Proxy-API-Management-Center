@@ -411,6 +411,10 @@ export function VisualConfigEditor({
         value: 'chat',
         label: t('config_management.visual.sections.network.disable_image_generation_chat'),
       },
+      {
+        value: 'passthrough',
+        label: t('config_management.visual.sections.network.disable_image_generation_passthrough'),
+      },
     ],
     [t]
   );
@@ -1137,6 +1141,12 @@ export function VisualConfigEditor({
                             ),
                           },
                           {
+                            value: 'weighted-round-robin',
+                            label: t(
+                              'config_management.visual.sections.network.strategy_weighted_round_robin'
+                            ),
+                          },
+                          {
                             value: 'fill-first',
                             label: t(
                               'config_management.visual.sections.network.strategy_fill_first'
@@ -1314,6 +1324,8 @@ export function VisualConfigEditor({
                     <Input
                       label={t('config_management.visual.sections.system.redis_usage_retention')}
                       type="number"
+                      min={1}
+                      max={3600}
                       placeholder="60"
                       value={values.redisUsageQueueRetentionSeconds}
                       onChange={(e) =>
@@ -1705,21 +1717,6 @@ export function VisualConfigEditor({
                           value={values.codexHeaderBetaFeatures}
                           onChange={(e) => onChange({ codexHeaderBetaFeatures: e.target.value })}
                           disabled={disabled}
-                        />
-                      </FieldAnchor>
-                    </SectionGrid>
-                    <SectionGrid>
-                      <FieldAnchor fieldId="codexIdentityConfuse">
-                        <ToggleRow
-                          title={t(
-                            'config_management.visual.sections.headers.codex_identity_confuse'
-                          )}
-                          description={t(
-                            'config_management.visual.sections.headers.codex_identity_confuse_desc'
-                          )}
-                          checked={values.codexIdentityConfuse}
-                          disabled={disabled}
-                          onChange={(codexIdentityConfuse) => onChange({ codexIdentityConfuse })}
                         />
                       </FieldAnchor>
                     </SectionGrid>
