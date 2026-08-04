@@ -80,6 +80,7 @@ interface SidebarNavLinkItem {
   meta?: string;
   badge?: number;
   badgeLabel?: string;
+  external?: boolean;
   icon: ReactNode;
 }
 
@@ -841,7 +842,7 @@ export function MainLayout() {
     const itemMeta = item.meta ?? (item.metaKey ? t(item.metaKey) : '');
     const accessibleLabel = item.badgeLabel ? `${itemLabel}, ${item.badgeLabel}` : itemLabel;
 
-    if ((item as any).external) {
+    if (item.external) {
       return (
         <a
           key={item.path}
