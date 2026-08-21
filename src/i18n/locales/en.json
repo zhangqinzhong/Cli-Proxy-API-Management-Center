@@ -852,6 +852,21 @@
   },
   "config_management": {
     "title": "Config Panel",
+    "meta_fields": "{{count}} settings",
+    "meta_dirty": "{{count}} unsaved",
+    "meta_dirty_source": "Unsaved source edits",
+    "meta_errors": "{{count}} validation errors",
+    "meta_synced": "In sync",
+    "actions": {
+      "discard": "Discard changes",
+      "save": "Save changes"
+    },
+    "discard_confirm_message": "Discard all unsaved changes and restore the last server version?",
+    "mode": {
+      "label": "Editor mode",
+      "visual": "Visual",
+      "source": "Source"
+    },
     "reload": "Reload",
     "reload_confirm_message": "Reloading will discard your unsaved changes. Do you want to continue?",
     "save": "Save",
@@ -885,26 +900,16 @@
       "confirm": "Confirm Save",
       "no_changes": "No changes detected"
     },
-    "tabs": {
-      "visual": "Visual Editor",
-      "source": "Source File Editor"
-    },
     "visual": {
-      "notice": "Visual mode covers common fields. Review or edit unsupported config.yaml entries in source mode.",
-      "quick_jump": "Quick Jump",
-      "mode": {
-        "simple": "Simple",
-        "full": "Full",
-        "label": "Editor mode",
-        "more_settings": "Switch to full mode to see all {{total}} sections",
-        "validation_banner": "Some advanced settings have validation errors and are blocking save. Switch to full mode to fix them.",
-        "switch_to_full": "Switch to full mode"
-      },
       "search": {
         "placeholder": "Search settings (label or YAML key)",
         "no_results": "No matching settings"
       },
       "sections": {
+        "common": {
+          "title": "Common",
+          "description": "The most-used settings, backed by the same data as the full sections"
+        },
         "connectivity": {
           "title": "Access & Authentication",
           "description": "Server address, port, auth directory, and API keys"
@@ -920,8 +925,6 @@
           "signature_title": "Antigravity Signature"
         },
         "server": {
-          "title": "Server Configuration",
-          "description": "Basic server settings",
           "host": "Host Address",
           "port": "Port"
         },
@@ -947,14 +950,10 @@
           "panel_repo": "Panel Repository"
         },
         "auth": {
-          "title": "Authentication Configuration",
-          "description": "API keys and authentication directory settings",
           "auth_dir": "Auth Directory (auth-dir)",
           "auth_dir_hint": "Directory path for authentication files (supports ~)"
         },
         "system": {
-          "title": "System Configuration",
-          "description": "Debug, logging, statistics, and performance settings",
           "debug": "Debug Mode",
           "debug_desc": "Enable verbose debug logging",
           "commercial_mode": "Commercial Mode",
@@ -1022,6 +1021,7 @@
           "title": "Network Configuration",
           "description": "Proxy, retry, and routing settings",
           "proxy_url": "Proxy URL",
+          "proxy_url_sponsor_hint": "No suitable proxy?",
           "request_retry": "Request Retry Count",
           "max_retry_credentials": "Max Retry Credentials",
           "max_retry_credentials_hint": "Leave empty to keep it unset. Set to 0 to preserve legacy behavior and try all available credentials.",
@@ -1099,7 +1099,15 @@
         "input_placeholder": "Paste your API key",
         "input_hint": "This only modifies the local config file content, it will not sync to the API Key Management interface",
         "error_empty": "Please enter an API key",
-        "error_invalid": "API key contains invalid characters"
+        "error_invalid": "API key contains invalid characters",
+        "strength": {
+          "label": "API key strength",
+          "empty": "Not entered",
+          "weak": "Weak",
+          "fair": "Fair",
+          "good": "Good",
+          "strong": "Strong"
+        }
       },
       "payload_rules": {
         "rule": "Rule",
@@ -1478,7 +1486,7 @@
       "codex": "Codex",
       "xai": "xAI",
       "claude": "Claude",
-      "claudeApi": "ClaudeAPI",
+      "claudeApi": "Claudeapi.com",
       "vertex": "Vertex",
       "openaiCompatibility": "OpenAI Compatible",
       "apikeyFun": "APIKEY.FUN",
@@ -1486,6 +1494,7 @@
       "fennoAI": "FennoAI",
       "qiniuCloud": "Qiniu Cloud",
       "lmuAI": "LMU AI (Lingmou AI)",
+      "infistar": "Infistar",
       "kimi": "Kimi"
     },
     "table": {
@@ -1538,11 +1547,15 @@
         "standard": "Standard URL",
         "direct": "Direct URL",
         "domestic": "China mainland route",
-        "overseas": "Overseas route"
+        "overseas": "Overseas route",
+        "mainlandChina": "Mainland China (recommended)",
+        "global": "Global"
       },
       "urlOptionDescriptions": {
         "domestic": "For users and workloads in mainland China; usually lower latency in mainland networks.",
-        "overseas": "For overseas deployments, cross-border access, or workloads that need overseas models."
+        "overseas": "For overseas deployments, cross-border access, or workloads that need overseas models.",
+        "mainlandChinaRecommended": "Recommended for users and workloads on mainland China networks.",
+        "global": "For users and workloads in all other regions."
       },
       "modelsTitle": "Protocol model settings",
       "modelsHint": "Configure model allowlists or aliases separately for Codex API, Anthropic, Gemini, and OpenAI-compatible routes.",

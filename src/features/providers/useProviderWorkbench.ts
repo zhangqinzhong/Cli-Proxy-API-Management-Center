@@ -20,6 +20,7 @@ import {
   openaiToResource,
   qiniuCloudToResource,
   lmuAIToResource,
+  infistarToResource,
   kimiToResource,
   vertexToResource,
   xaiToResource,
@@ -65,8 +66,20 @@ import {
   isLmuAIGeminiProvider,
   isLmuAIOpenAIProvider,
 } from './lmuAI';
+import {
+  buildInfistarRaw,
+  isInfistarClaudeProvider,
+  isInfistarCodexProvider,
+  isInfistarGeminiProvider,
+  isInfistarOpenAIProvider,
+} from './infistar';
 import { buildKimiRaw, isKimiClaudeProvider, isKimiOpenAIProvider } from './kimi';
-import { getSponsorProviderDefinition, type SponsorProtocolUrls } from './sponsorDefinitions';
+import {
+  getSponsorProviderDefinition,
+  isTemporarilyHiddenSponsorBrand,
+  TEMPORARILY_HIDDEN_SPONSOR_BRANDS,
+  type SponsorProtocolUrls,
+} from './sponsorDefinitions';
 import { runSponsorMutationWithRecovery } from './sponsorMutationRecovery';
 
 export interface UseProviderWorkbenchResult {
@@ -439,6 +452,9 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
 
   const snapshot = useMemo<ProviderSnapshot | null>(() => {
     if (!config) return null;
+    // 临时隐藏的赞助商：不排除其协议配置，让各协议分组接管显示（见 sponsorDefinitions.ts）
+    const fennoAIHidden = TEMPORARILY_HIDDEN_SPONSOR_BRANDS.has('fennoAI');
+    const qiniuCloudHidden = TEMPORARILY_HIDDEN_SPONSOR_BRANDS.has('qiniuCloud');
     const groups: ProviderGroup[] = PROVIDER_BRAND_ORDER.map((brand) => {
       let resources: ProviderResource[] = [];
       switch (brand) {
@@ -447,8 +463,9 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
             (out, item, index) => {
               if (
                 !isCode0GeminiProvider(item) &&
-                !isQiniuCloudGeminiProvider(item) &&
-                !isLmuAIGeminiProvider(item)
+                (qiniuCloudHidden || !isQiniuCloudGeminiProvider(item)) &&
+                !isLmuAIGeminiProvider(item) &&
+                !isInfistarGeminiProvider(item)
               ) {
                 out.push(geminiToResource(item, index));
               }
@@ -467,9 +484,10 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
             if (
               !isApiKeyFunCodexProvider(item) &&
               !isCode0CodexProvider(item) &&
-              !isFennoAICodexProvider(item) &&
-              !isQiniuCloudCodexProvider(item) &&
-              !isLmuAICodexProvider(item)
+              (fennoAIHidden || !isFennoAICodexProvider(item)) &&
+              (qiniuCloudHidden || !isQiniuCloudCodexProvider(item)) &&
+              !isLmuAICodexProvider(item) &&
+              !isInfistarCodexProvider(item)
             ) {
               out.push(codexToResource(item, index));
             }
@@ -485,9 +503,10 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
               if (
                 !isApiKeyFunClaudeProvider(item) &&
                 !isCode0ClaudeProvider(item) &&
-                !isFennoAIClaudeProvider(item) &&
-                !isQiniuCloudClaudeProvider(item) &&
+                (fennoAIHidden || !isFennoAIClaudeProvider(item)) &&
+                (qiniuCloudHidden || !isQiniuCloudClaudeProvider(item)) &&
                 !isLmuAIClaudeProvider(item) &&
+                !isInfistarClaudeProvider(item) &&
                 !isKimiClaudeProvider(item) &&
                 !isClaudeApiProvider(item)
               ) {
@@ -518,8 +537,9 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
               if (
                 !isApiKeyFunOpenAIProvider(item) &&
                 !isCode0OpenAIProvider(item) &&
-                !isQiniuCloudOpenAIProvider(item) &&
+                (qiniuCloudHidden || !isQiniuCloudOpenAIProvider(item)) &&
                 !isLmuAIOpenAIProvider(item) &&
+                !isInfistarOpenAIProvider(item) &&
                 !isKimiOpenAIProvider(item)
               ) {
                 out.push(openaiToResource(item, index));
@@ -554,6 +574,11 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           resources = sponsorResource ? [sponsorResource] : [];
           break;
         }
+        case 'infistar': {
+          const sponsorResource = infistarToResource(buildInfistarRaw(config));
+          resources = sponsorResource ? [sponsorResource] : [];
+          break;
+        }
         case 'kimi': {
           const sponsorResource = kimiToResource(buildKimiRaw(config));
           resources = sponsorResource ? [sponsorResource] : [];
@@ -567,7 +592,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
     });
     return {
       fetchedAt,
-      groups,
+      groups: groups.filter((group) => !isTemporarilyHiddenSponsorBrand(group.id)),
     };
   }, [config, fetchedAt]);
 
@@ -587,7 +612,9 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
                 ? buildQiniuCloudRaw(config)
                 : brand === 'lmuAI'
                   ? buildLmuAIRaw(config)
-                  : buildKimiRaw(config);
+                  : brand === 'infistar'
+                    ? buildInfistarRaw(config)
+                    : buildKimiRaw(config);
       const entries = normalizeSponsorKeyEntries(input.sponsorKeyEntries);
       const openaiEntry = entries.find((entry) => entry.protocol === 'openai');
       const claudeEntry = entries.find((entry) => entry.protocol === 'claude');
@@ -722,6 +749,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           brand === 'fennoAI' ||
           brand === 'qiniuCloud' ||
           brand === 'lmuAI' ||
+          brand === 'infistar' ||
           brand === 'kimi'
         ) {
           await runSponsorMutationWithRecovery(() => persistSponsorConfig(brand, input), refetch);
@@ -800,6 +828,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           brand === 'fennoAI' ||
           brand === 'qiniuCloud' ||
           brand === 'lmuAI' ||
+          brand === 'infistar' ||
           brand === 'kimi'
         ) {
           await runSponsorMutationWithRecovery(() => persistSponsorConfig(brand, input), refetch);
@@ -857,6 +886,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           sel.brand === 'fennoAI' ||
           sel.brand === 'qiniuCloud' ||
           sel.brand === 'lmuAI' ||
+          sel.brand === 'infistar' ||
           sel.brand === 'kimi'
         ) {
           await runSponsorMutationWithRecovery(async () => {
@@ -939,6 +969,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           brand === 'fennoAI' ||
           brand === 'qiniuCloud' ||
           brand === 'lmuAI' ||
+          brand === 'infistar' ||
           brand === 'kimi'
         ) {
           await runSponsorMutationWithRecovery(
